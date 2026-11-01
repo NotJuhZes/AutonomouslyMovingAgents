@@ -16,15 +16,15 @@ public class Bot : MonoBehaviour
     }
 
     void Seek(Vector3 location)
-    { 
-    agent.SetDestination(location);
+    {
+        agent.SetDestination(location);
     }
-   
+
     void Flee(Vector3 location)
     {
         Vector3 fleeVector = this.transform.position - location;
         agent.SetDestination(this.transform.position - fleeVector);
-    } 
+    }
 
     void Pursue()
     {
@@ -73,11 +73,11 @@ public class Bot : MonoBehaviour
         float dist = Mathf.Infinity;
         Vector3 chosenSpot = Vector3.zero;
 
-       for (int i = 0; i < World.Instance.GetHidingSpots().Length; i++)
+        for (int i = 0; i < World.Instance.GetHidingSpots().Length; i++)
         {
             Vector3 hideDir = World.Instance.GetHidingSpots()[i].transform.position - target.transform.position;
             Vector3 hidePos = World.Instance.GetHidingSpots()[i].transform.position + hideDir.normalized * 10;
-            
+
             if (Vector3.Distance(this.transform.position, hidePos) < dist)
             {
                 chosenSpot = hidePos;
@@ -120,6 +120,7 @@ public class Bot : MonoBehaviour
     {
         RaycastHit raycastInfo;
         Vector3 rayToTarget = target.transform.position - this.transform.position;
+        float lookAngle = Vector3.Angle(this.transform.forward, rayToTarget);
         if (Physics.Raycast(this.transform.position, rayToTarget, out raycastInfo))
         {
             if (raycastInfo.transform.gameObject.tag == "cop")
@@ -128,9 +129,38 @@ public class Bot : MonoBehaviour
         return false;
     }
 
+    bool CanSeeMe()
+    {
+        Vector3 rayToTarget = this.transform.position - target.transform.position;
+        float lookAngle = Vector3.Angle(target.transform.forward, rayToTarget);
+
+        if (lookAngle < 60)
+            return true;
+        return false;
+
+    }
+
+    bool coolDown = false;
+    void BehaviourCoolDown()
+    {
+        coolDown = true;
+    }
+
     void Update()
     {
-        if (CanSeeTarget())
-            CleverHide();
+        if (!coolDown)
+        {
+            if (CanSeeTarget() && CanSeeMe())
+            {
+                CleverHide();
+                coolDown = true;
+                Invoke("BehaviourCooldown", 5);
+
+            }
+            else
+            {
+                Pursue();
+            }
+        }
     }
 }
